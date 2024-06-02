@@ -1,5 +1,5 @@
 [package]
-name = "pool"
+name = "core"
 description = "cargo-near-new-project-description"
 version = "0.1.0"
 edition = "2021"
@@ -17,10 +17,9 @@ near-sdk = "5.1.0"
 near-contract-standards = "5.1.0"
 
 [dev-dependencies]
-anyhow = "1.0"
 near-sdk = { version = "5.1.0", features = ["unit-testing"] }
 near-workspaces = { version = "0.10.0", features = ["unstable"] }
-tokio = { version = "1.14", features = ["full"] }
+tokio = { version = "1.12.0", features = ["full"] }
 serde_json = "1"
 
 [profile.release]
