@@ -6,30 +6,33 @@ use crate::*;
 #[serde(crate = "near_sdk::serde")]
 #[serde(untagged)]
 enum TokenReceiverMessage {
-    Deposit {
+    RequestReview {
         vapi_id: String,
+        version: String,
+        reviewer_ids: Vec<AccountId>,
+        royalty_amounts: Vec<U128>,
+        signature: String,
     },
     Settlement {
         vapi_ids: Vec<String>,
-        amounts: Vec<Balance>,
+        amounts: Vec<U128>,
     },
-    RequestReview {
+    Deposit {
         vapi_id: String,
-        reviewer_ids: Vec<AccountId>,
-        reviewer_infos: Vec<ReviewerInfo>,
     },
 }
 
 #[near]
-impl FungibleTokenReceiver for Core {
+impl FungibleTokenReceiver for TicleCore {
     fn ft_on_transfer(&mut self, sender_id: AccountId, amount: U128, msg: String) -> PromiseOrValue<U128> {
         let token_id: AccountId = env::predecessor_account_id();
         require!(token_id == self.token_id, "Invalid token");
 
         if msg.is_empty() {
-            PromiseOrValue::Value(U128(0));
+            return PromiseOrValue::Value(U128(0));
         }
 
+        log!("[ft_on_transfer] sender_id: {}", sender_id);
         log!("[ft_on_transfer] msg: {}", msg);
         let message = serde_json::from_str::<TokenReceiverMessage>(&msg).expect("Invalid message format");
         log!("[ft_on_transfer] selected message");
@@ -41,8 +44,8 @@ impl FungibleTokenReceiver for Core {
             TokenReceiverMessage::Settlement { vapi_ids, amounts } => {
                 self.internal_settlement(&sender_id, vapi_ids, amounts);
             }
-            TokenReceiverMessage::RequestReview { vapi_id, reviewer_ids, reviewer_infos } => {
-                self.internal_request_review(vapi_id, reviewer_ids, reviewer_infos, sender_id, amount.into());
+            TokenReceiverMessage::RequestReview { vapi_id, version, reviewer_ids, royalty_amounts, signature } => {
+                self.internal_request_review(vapi_id, version, reviewer_ids, royalty_amounts, sender_id, amount.into(), signature);
             }
         }
 

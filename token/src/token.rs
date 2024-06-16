@@ -21,32 +21,37 @@ pub struct TokenContract {
 
 #[near]
 impl TokenContract {
-  #[init]
-  pub fn new(owner_id: AccountId, total_supply: U128, metadata: FungibleTokenMetadata) -> Self {
-    assert!(!env::state_exists(), "Already exists");
-    metadata.assert_valid();
+    #[init]
+    pub fn new(owner_id: AccountId, total_supply: U128, metadata: FungibleTokenMetadata) -> Self {
+        assert!(!env::state_exists(), "Already exists");
+        metadata.assert_valid();
 
-    let mut this = Self {
-      token: FungibleToken::new(StorageKey::FungibleToken),
-      metadata: LazyOption::new(StorageKey::Metadata, Some(&metadata)),
-    };
-    
-    this.token.internal_register_account(&owner_id);
-    this.token.internal_deposit(&owner_id, total_supply.into());
-    
-    near_contract_standards::fungible_token::events::FtMint{
-      owner_id: &owner_id,
-      amount: total_supply.into(),
-      memo: Some("Minted {amount} tokens"),
-    }.emit();
-    
-    return this;
-  }
+        let mut this = Self {
+        token: FungibleToken::new(StorageKey::FungibleToken),
+        metadata: LazyOption::new(StorageKey::Metadata, Some(&metadata)),
+        };
+        
+        this.token.internal_register_account(&owner_id);
+        this.token.internal_deposit(&owner_id, total_supply.into());
+        
+        near_contract_standards::fungible_token::events::FtMint{
+        owner_id: &owner_id,
+        amount: total_supply.into(),
+        memo: Some("Minted {amount} tokens"),
+        }.emit();
+        
+        return this;
+    }
+
+    #[payable]
+    pub fn burn(&mut self, amount: U128) {
+        self.token.internal_withdraw(&env::signer_account_id(), amount.into());
+    }
 }
 
 #[near]
 impl FungibleTokenCore for TokenContract {
-  #[payable]
+    #[payable]
     fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>) {
         log!("receiver_id: {}", receiver_id);
         self.token.ft_transfer(receiver_id, amount, memo)
